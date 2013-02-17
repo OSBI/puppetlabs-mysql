@@ -51,7 +51,7 @@ define mysql::db (
     ensure   => $ensure,
     charset  => $charset,
     provider => 'mysql',
-    require  => Class['mysql::server'],
+    require  => [Class['mysql::server'],Class['mysql::config']]
   }
 
   database_user { "${user}@${host}":
@@ -72,7 +72,7 @@ define mysql::db (
 
     if $sql {
       exec{ "${name}-import":
-        command     => "/usr/bin/mysql ${name} < ${sql}",
+        command     => "/usr/bin/mysql --defaults-file=/root/.my.cnf ${name} < ${sql}",
         logoutput   => true,
         refreshonly => $refresh,
         require     => Database_grant["${user}@${host}/${name}"],
