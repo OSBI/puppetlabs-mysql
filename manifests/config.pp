@@ -85,8 +85,40 @@ class mysql::config(
     logoutput   => on_failure,
     refreshonly => true,
     path        => '/sbin/:/usr/sbin/:/usr/bin/:/bin/',
+    require => File["/etc/apparmor.d/usr.sbin.mysqld"]
   }
 
+  file { "${mysql::config::datadir}":
+    ensure => directory,
+    owner => "mysql",
+    group => "mysql", 
+    #seltype => "mysqld_db_t",
+    mode => "700",
+    require => Package["mysql-server"]
+  } ->
+  exec{ "copy mysql files":
+      command => 'cp -rfp /var/lib/mysql/* /mnt/mysql/ && chmod -R u+rw /mnt/mysql',
+      creates => '/mnt/mysql/debian-5.5.flag',
+    }
+->
+     file{"/etc/apparmor.d/usr.sbin.mysqld":
+      ensure => present,
+      content => template("mysql/usr.sbin.mysqld.erb"),
+      notify => Service["apparmor"],
+    }
+
+    
+ if( "${mysql::config::datadir}" != "/var/lib/mysql" ) {
+#   File["${mysql::config::datadir}"]{
+#     source => "/var/lib/mysql",
+#     recurse => true,
+#     replace => false,
+#   }
+ # exec{ "copy mysql files":
+ #     command => 'cp -rfp /var/lib/mysql/* /mnt/mysql/',
+ #     creates => '/mnt/mysql/debian-5.5.flag',
+ #   }  
+}
   # manage root password if it is set
   if $root_password != 'UNSET' {
     case $old_root_password {
@@ -114,7 +146,7 @@ class mysql::config(
     if $etc_root_password {
       file{ '/etc/my.cnf':
         content => template('mysql/my.cnf.pass.erb'),
-        require => Exec['set_mysql_rootpw'],
+        require => [Exec['set_mysql_rootpw'],File["${mysql::config::datadir}"]],
       }
     }
   } else {

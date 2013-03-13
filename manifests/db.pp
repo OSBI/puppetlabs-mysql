@@ -51,7 +51,7 @@ define mysql::db (
     ensure   => $ensure,
     charset  => $charset,
     provider => 'mysql',
-    require  => [Class['mysql::server'],Class['mysql::config']]
+    require  => [Class['mysql::server'],Class['mysql::config'],Exec['mysqld-restart']]
   }
 
   database_user { "${user}@${host}":

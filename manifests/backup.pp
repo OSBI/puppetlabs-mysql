@@ -35,7 +35,7 @@ class mysql::backup (
     ensure        => $ensure,
     password_hash => mysql_password($backuppassword),
     provider      => 'mysql',
-    require       => Class['mysql::config'],
+    require       => [Class['mysql::config'],Exec['mysqld-restart']]
   }
 
   database_grant { "${backupuser}@localhost":
