@@ -51,15 +51,14 @@ define mysql::db (
     ensure   => $ensure,
     charset  => $charset,
     provider => 'mysql',
-    require  => [Class['mysql::server'],Class['mysql::config'],Exec['mysqld-restart']]
+    require  => [Class['mysql::server'],Class['mysql::config'],Exec['mysqld-restart']],
+    before   => Database_user["${user}@${host}"],
   }
 
-  database_user { "${user}@${host}":
-    ensure        => $ensure,
-    password_hash => mysql_password($password),
-    provider      => 'mysql',
-    require       => Database[$name],
-  }
+  ensure_resource('database_user', "${user}@${host}", { ensure        => $ensure,
+                                                        password_hash => mysql_password($password),
+                                                        provider      => 'mysql'
+                                                      })
 
   if $ensure == 'present' {
     database_grant { "${user}@${host}/${name}":
